@@ -1,5 +1,3 @@
-// +build ignore
-
 package main
 
 import (
@@ -9,11 +7,30 @@ import (
 	"os"
 	"text/template"
 	"time"
+	"flag"
 )
 
 func main() {
-	const url = "https://mkcert.org/generate/"
+	flagCerts := flag.String("certs", "", "Certs, plus sign separated ex. (digicert+verisign+geotrust) Default is all certs")
+	flagAllExcept := flag.Bool("allexcept", false, "Gets all certs except")
+	flagOutputFile := flag.String("o", "./certifi.go", "Writes output to this file")
+	flagTest := flag.Bool("test", false, "Appends .test to output path")
+	//flagDebug := flag.Bool("verbose", false, "Prints debug information")
+
+	flag.Parse()
+	
+	url := "https://mkcert.org/generate/"
+
+	if *flagAllExcept {
+		url += "all/except/"
+	}
+
+	if len(*flagCerts) > 0 {
+		url += *flagCerts
+	}
+	
 	resp, err := http.Get(url)
+		
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -24,7 +41,13 @@ func main() {
 
 	bundle, err := ioutil.ReadAll(resp.Body)
 
-	fp, err := os.Create("certifi.go")
+	if *flagTest {
+		str := *flagOutputFile + ".test"
+		flagOutputFile = &str
+	}
+	
+	fp, err := os.Create(*flagOutputFile)
+	
 	if err != nil {
 		log.Fatal(err)
 	}
